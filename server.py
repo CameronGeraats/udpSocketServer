@@ -33,13 +33,24 @@ def connectionLoop(sock):
     while True:
         # Listen to the next message
         data, addr = sock.recvfrom(1024)
+        data2 = data.decode('utf8')
         data = str(data)
         print("Got this: " + data)
         # if addr (i.e IP,PORT) exists in clients dictionary
         if addr in clients:
             # update the heartbeat value if data dictionary has a key called 'heartbeat'
-            if 'heartbeat' in data:
-                clients[addr]['lastBeat'] = datetime.now()
+            #if 'x' in data:
+            clients[addr]['lastBeat'] = datetime.now()
+            p = json.loads(data2)
+            clients[addr]['posOri'] =  {
+                "x": p['x'],
+                "y": p['y'],
+                "z": p['z'],
+                "rx": p['rx'],
+                "ry": p['ry'],
+                "rz": p['rz'],
+                "rw": p['rw']
+            }
         else:
             # if there is a key called 'connect' in data dictionary
             if 'connect' in data:
@@ -49,6 +60,16 @@ def connectionLoop(sock):
                 clients[addr]['lastBeat'] = datetime.now()
                 # add a field called color
                 clients[addr]['color'] = 0
+
+                clients[addr]['posOri'] =  {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0,
+                    "rx": 0,
+                    "ry": 0,
+                    "rz": 0,
+                    "rw": 0
+                }
                 # create a message object with a command value and an array of player objects
                 message = {"cmd": 0, "players": []}  # {"id":addr}}
 
@@ -58,6 +79,16 @@ def connectionLoop(sock):
                 p['id'] = str(addr)
                 # create a field called color
                 p['color'] = 0
+
+                p['posOri'] =  {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0,
+                    "rx": 0,
+                    "ry": 0,
+                    "rz": 0,
+                    "rw": 0
+                }
                 # add the object to the player array
                 message['players'].append(p)
 
@@ -82,6 +113,8 @@ def connectionLoop(sock):
                     player['id'] = str(c)
                     # set the color to the key's properties
                     player['color'] = clients[c]['color']
+
+                    player['posOri'] =  clients[c]['posOri']
                     # add it to the game state
                     GameState['players'].append(player)
                     # send the message object containg the new connected client to the previously connected clients
@@ -153,6 +186,7 @@ def gameLoop(sock):
             # fill the player details
             player['id'] = str(c)
             player['color'] = clients[c]['color']
+            player['posOri'] = clients[c]['posOri']
             GameState['players'].append(player)
         s = json.dumps(GameState, separators=(",", ":"))
         #      print(s)
@@ -162,7 +196,8 @@ def gameLoop(sock):
         clients_lock.release()
         if (len(clients) > 0):
             pktID = pktID + 1
-        time.sleep(1)
+        time.sleep(0.033)
+        #time.sleep(1)
 
 
 ########################
